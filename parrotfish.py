@@ -58,4 +58,5 @@ async def fanfic_feed(request, id):
 		content_type='application/rss+xml; charset=utf-8')
 
 if __name__ == '__main__':
-	app.run(host='0.0.0.0', port=8000)
+	app.run(
+		port=20550) # ASCII for 'PF'
