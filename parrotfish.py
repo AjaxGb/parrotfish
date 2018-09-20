@@ -1,22 +1,22 @@
-from quart import Quart, Response
+from flask import Flask, Response
 from bs4 import BeautifulSoup
-import aiohttp
+import requests
 import rfeed
 from datetime import datetime
 
-app = Quart(__name__)
+app = Flask(__name__)
 
 has_data_xutime = { 'data-xutime': True }
 
 @app.route('/feed/fanfic/<int:id>')
-async def fanfic_feed(id):
+def fanfic_feed(id):
 	story_url = f'https://www.fanfiction.net/s/{id}'
-	async with aiohttp.request('GET', story_url) as resp:
-		if resp.status != 200:
-			return f'No story with ID {id} could be found', 404
-		story_html = await resp.content.read()
 	
-	soup = BeautifulSoup(story_html, 'html.parser')
+	resp = requests.get(story_url)
+	if resp.status_code != 200:
+		return f'No story with ID {id} could be found', 404
+	
+	soup = BeautifulSoup(resp.text, 'html.parser')
 	
 	header = soup.find(id='profile_top')
 	if not header:
