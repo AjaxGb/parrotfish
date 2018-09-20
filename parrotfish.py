@@ -1,26 +1,29 @@
-from flask import Flask, Response
+from sanic import Sanic
+from sanic.response import json, redirect
+from sanic.response import text as text_response
+from sanic.exceptions import NotFound
 from bs4 import BeautifulSoup
-import requests
+import aiohttp
 import rfeed
 from datetime import datetime
 
-app = Flask(__name__)
+app = Sanic()
 
 has_data_xutime = { 'data-xutime': True }
 
-@app.route('/feed/fanfic/<int:id>')
-def fanfic_feed(id):
+@app.route('/feed/fanfic/<id:int>')
+async def fanfic_feed(request, id):
 	story_url = f'https://www.fanfiction.net/s/{id}'
+	async with aiohttp.request('GET', story_url) as resp:
+		if resp.status != 200:
+			raise NotFound(f'No story with ID {id} could be found')
+		story_html = await resp.content.read()
 	
-	resp = requests.get(story_url)
-	if resp.status_code != 200:
-		return f'No story with ID {id} could be found', 404
-	
-	soup = BeautifulSoup(resp.text, 'html.parser')
+	soup = BeautifulSoup(story_html, 'html.parser')
 	
 	header = soup.find(id='profile_top')
 	if not header:
-		return f'No story with ID {id} could be found', 404
+		raise NotFound(f'No story with ID {id} could be found')
 	
 	title = header.find('b')
 	author = title.find_next_sibling('a')
@@ -43,7 +46,7 @@ def fanfic_feed(id):
 	
 	chapters.reverse()
 	
-	return Response(
+	return text_response(
 		rfeed.Feed(
 			title = f'{title.text} by {author.text}',
 			link = story_url,
@@ -52,7 +55,7 @@ def fanfic_feed(id):
 			pubDate = updated_time,
 			generator = 'Parrotfish v0.1',
 			items = chapters).rss(),
-		mimetype='application/rss+xml')
+		content_type='application/rss+xml; charset=utf-8')
 
 if __name__ == '__main__':
 	app.run(host='0.0.0.0', port=8000)
