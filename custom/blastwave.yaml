@@ -1,0 +1,26 @@
+source_url: http://www.blastwave-comic.com/
+
+feed:
+  title: Gone with the Blastwave
+  description: Because war can be boring too.
+
+item_sources:
+  - type: from_elements
+    
+    parent:
+      - name: select
+        class: fall
+    elements:
+      name: option
+      value: !re .
+    
+    extractions:
+      id:
+        from: attribute
+        attribute: value
+      name:
+        from: contents
+    
+    feed_item:
+      title: "{name}"
+      link: http://www.blastwave-comic.com/index.php?p=comic&nro={id}
