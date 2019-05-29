@@ -71,7 +71,11 @@ class FromElementsSource(ItemSource, name='from_elements'):
 		
 		parent_node = soup
 		for sel in self.parent_selectors:
-			parent_node = parent_node.find(**sel)
+			try:
+				ordinal = sel['ordinal']
+				parent_node = parent_node.find_all(**sel)[ordinal]
+			except KeyError:
+				parent_node = parent_node.find(**sel)
 		
 		items = []
 		for el in parent_node.find_all(**self.element_selector):

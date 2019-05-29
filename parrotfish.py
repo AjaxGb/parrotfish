@@ -7,6 +7,7 @@ import aiohttp
 import rfeed
 from datetime import datetime
 from custom_site_parser import load_parser as load_site_parser
+from importlib import import_module
 import os
 
 GENERATOR_NAME = 'Parrotfish v0.1'
@@ -132,10 +133,17 @@ async def mangarock_manga_feed(request, oid):
 @app.route('/feed/custom/<name>')
 async def custom_feed(request, name):
 	parser = custom_parsers.get(name)
-	if not parser:
-		raise NotFound(f'No custom parser with ID `{name}` could be found')
+	if parser:
+		feed = await parser.request_and_parse()
+	else:
+		try:
+			parser = import_module(
+				f'custom.{name.replace("-", "_")}')
+		except ModuleNotFoundError:
+			raise NotFound(f'No custom parser with ID `{name}` could be found')
+		
+		feed = await parser.make_feed(request, GENERATOR_NAME)
 	
-	feed = await parser.request_and_parse()
 	return text_response(feed.rss(),
 		content_type='application/rss+xml; charset=utf-8')
 
