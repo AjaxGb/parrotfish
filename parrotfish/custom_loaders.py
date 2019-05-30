@@ -6,13 +6,13 @@ from itertools import chain
 import aiohttp
 from bs4 import BeautifulSoup
 
-class CustomSafeYamlLoader(yaml.SafeLoader):
+class _InnerSafeYamlLoader(yaml.SafeLoader):
 	pass
 
 def parse_regex(loader, node):
 	return re.compile(loader.construct_scalar(node))
 
-CustomSafeYamlLoader.add_constructor('!re', parse_regex)
+_InnerSafeYamlLoader.add_constructor('!re', parse_regex)
 
 
 class Extraction:
@@ -122,7 +122,7 @@ class SiteParser:
 		
 		return rfeed.Feed(**self.feed_template, items=items)
 	
-	async def request_and_parse(self):
+	async def make_feed(self):
 		async with aiohttp.request(self.http_method, self.url) as resp:
 			if resp.status // 100 != 2:
 				raise NotFound(f'The site at {self.url} failed to load')
@@ -131,8 +131,8 @@ class SiteParser:
 		return self.parse(BeautifulSoup(html, 'html.parser'))
 
 
-def load_parser(name, file, *, generator):
-	settings = yaml.load(file, Loader=CustomSafeYamlLoader)
+def load_yaml_parser(name, file, *, generator):
+	settings = yaml.load(file, Loader=_InnerSafeYamlLoader)
 	return SiteParser(name, settings, generator)
 
 

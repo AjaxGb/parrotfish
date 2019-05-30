@@ -6,16 +6,14 @@ from bs4 import BeautifulSoup
 import aiohttp
 import rfeed
 from datetime import datetime
-from custom_site_parser import load_parser as load_site_parser
+from parrotfish import generator_name
+from parrotfish.custom import load_yaml_parser
 from importlib import import_module
 import os
 
-GENERATOR_NAME = 'Parrotfish v0.1'
-parrotfish_path = os.path.dirname(os.path.realpath(__file__))
-
-
 print("Loading custom parsers...")
 
+parrotfish_path = os.path.dirname(os.path.realpath(__file__))
 custom_folder = os.path.join(parrotfish_path, 'custom')
 custom_parsers = {}
 
@@ -32,8 +30,8 @@ with os.scandir(custom_folder) as it:
 		
 		with open(entry.path) as file:
 			try:
-				parser = load_site_parser(name, file,
-					generator=GENERATOR_NAME)
+				parser = load_yaml_parser(name, file,
+					generator=generator_name)
 			except Exception as e:
 				print("Failed to load parser ", entry.name)
 				print(e)
@@ -88,7 +86,7 @@ async def fanfic_feed(request, id):
 			description = description.text,
 			lastBuildDate = updated_time,
 			pubDate = updated_time,
-			generator = GENERATOR_NAME,
+			generator = generator_name,
 			items = chapters).rss(),
 		content_type='application/rss+xml; charset=utf-8')
 
@@ -126,7 +124,7 @@ async def mangarock_manga_feed(request, oid):
 			description = data.get('description'),
 			lastBuildDate = updated_time,
 			pubDate = updated_time,
-			generator = GENERATOR_NAME,
+			generator = generator_name,
 			items = chapters).rss(),
 		content_type='application/rss+xml; charset=utf-8')
 
@@ -142,11 +140,10 @@ async def custom_feed(request, name):
 		except ModuleNotFoundError:
 			raise NotFound(f'No custom parser with ID `{name}` could be found')
 		
-		feed = await parser.make_feed(request, GENERATOR_NAME)
+		feed = await parser.make_feed(request)
 	
 	return text_response(feed.rss(),
 		content_type='application/rss+xml; charset=utf-8')
 
-if __name__ == '__main__':
-	app.run(
-		port=20550) # ASCII for 'PF'
+def run_server(port=20550): # ASCII for 'PF'
+	app.run(port=port)

@@ -3,8 +3,9 @@ from datetime import datetime
 import re
 import html
 import rfeed
+from parrotfish import generator_name
 
-async def make_feed(request, gen_name):
+async def make_feed():
 	base_url = 'http://www.bogleech.com/awfulhospital/archive.html'
 	async with aiohttp.request('GET', base_url) as resp:
 		if resp.status != 200:
@@ -19,6 +20,7 @@ async def make_feed(request, gen_name):
 			last_modified = datetime.now()
 	
 	# The HTML is so gunked up even BeautifulSoup won't cut it
+	# I'm pretty sure Bogleech updates it directly in Notepad
 	# May the old gods forgive me
 	
 	layers = []
@@ -42,13 +44,12 @@ async def make_feed(request, gen_name):
 			link='http://www.bogleech.com/awfulhospital/',
 			lastBuildDate=last_modified,
 			pubDate=last_modified,
-			generator=gen_name,
+			generator=generator_name,
 			items=layers)
 
 if __name__ == '__main__':
 	import asyncio
 	
 	loop = asyncio.get_event_loop()
-	feed = loop.run_until_complete(make_feed(None, 'AAA'))
+	feed = loop.run_until_complete(make_feed())
 	print(feed.rss())
-	
