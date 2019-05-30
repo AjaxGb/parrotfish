@@ -11,38 +11,9 @@ from parrotfish.custom import load_yaml_parser
 from importlib import import_module
 import os
 
-print("Loading custom parsers...")
-
-parrotfish_path = os.path.dirname(os.path.realpath(__file__))
-custom_folder = os.path.join(parrotfish_path, 'custom')
-custom_parsers = {}
-
-with os.scandir(custom_folder) as it:
-	
-	for entry in it:
-		
-		if not entry.is_file():
-			continue
-		
-		name, extension = os.path.splitext(entry.name)
-		if extension != '.yaml':
-			continue
-		
-		with open(entry.path) as file:
-			try:
-				parser = load_yaml_parser(name, file,
-					generator=generator_name)
-			except Exception as e:
-				print("Failed to load parser ", entry.name)
-				print(e)
-				continue
-		
-		custom_parsers[name] = parser
-
-print("Done. Loaded", len(custom_parsers), "custom parser(s).")
-
-
 app = Sanic()
+
+custom_parsers = {}
 
 @app.route('/feed/fanfic/<id:int>')
 async def fanfic_feed(request, id):
@@ -146,4 +117,37 @@ async def custom_feed(request, name):
 		content_type='application/rss+xml; charset=utf-8')
 
 def run_server(port=20550): # ASCII for 'PF'
+	print()
+	print(f'Welcome to {generator_name}!')
+	print()
+	print('Loading custom YAML parsers...')
+	
+	parrotfish_path = os.path.dirname(os.path.realpath(__file__))
+	custom_folder = os.path.join(parrotfish_path, 'custom')
+	
+	with os.scandir(custom_folder) as it:
+		
+		for entry in it:
+			
+			if not entry.is_file():
+				continue
+			
+			name, extension = os.path.splitext(entry.name)
+			if extension != '.yaml':
+				continue
+			
+			with open(entry.path) as file:
+				try:
+					parser = load_yaml_parser(name, file,
+						generator=generator_name)
+				except Exception as e:
+					print('Failed to load parser ', entry.name)
+					print(e)
+					continue
+			
+			custom_parsers[name] = parser
+	
+	print('Done. Loaded', len(custom_parsers), 'custom parser(s).')
+	print()
+
 	app.run(port=port)
