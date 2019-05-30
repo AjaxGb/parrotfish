@@ -11,7 +11,7 @@ setup(
 	license='MIT',
 	packages=['parrotfish'],
 	install_requires=[
-		'sanic',
+		'quart',
 		'aiohttp',
 		'beautifulsoup4',
 		'rfeed',

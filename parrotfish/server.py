@@ -1,7 +1,4 @@
-from sanic import Sanic
-from sanic.response import json, redirect
-from sanic.response import text as text_response
-from sanic.exceptions import NotFound
+from quart import Quart, Response, jsonify
 from bs4 import BeautifulSoup
 import aiohttp
 import rfeed
@@ -11,23 +8,29 @@ from parrotfish.custom import load_yaml_parser
 from importlib import import_module
 import os
 
-app = Sanic()
+app = Quart(__name__)
 
 custom_yaml_parsers = {}
 
-@app.route('/feed/fanfic/<id:int>')
-async def fanfic_feed(request, id):
+def text_response(text):
+	return Response(text, mimetype='text/plain; charset=utf-8')
+
+def rss_response(feed):
+	return Response(feed.rss(), mimetype='application/rss+xml; charset=utf-8')
+
+@app.route('/feed/fanfic/<int:id>')
+async def fanfic_feed(id):
 	story_url = f'https://www.fanfiction.net/s/{id}'
 	async with aiohttp.request('GET', story_url) as resp:
 		if resp.status != 200:
-			raise NotFound(f'No story with ID {id} could be found')
+			return text_response(f'No story with ID {id} could be found'), 404
 		story_html = await resp.content.read()
 	
 	soup = BeautifulSoup(story_html, 'html.parser')
 	
 	header = soup.find(id='profile_top')
 	if not header:
-		raise NotFound(f'No story with ID {id} could be found')
+		return text_response(f'No story with ID {id} could be found'), 404
 	
 	title = header.find('b')
 	author = title.find_next_sibling('a')
@@ -38,6 +41,8 @@ async def fanfic_feed(request, id):
 		int(updated['data-xutime']))
 	
 	chapter_select = soup.find(id='chap_select')
+	if not chapter_select:
+		return text_response(f'No story with ID {id} could be found'), 404
 	
 	chapters = []
 	for option in chapter_select.find_all('option'):
@@ -50,27 +55,25 @@ async def fanfic_feed(request, id):
 	
 	chapters.reverse()
 	
-	return text_response(
-		rfeed.Feed(
-			title = f'{title.text} by {author.text}',
-			link = story_url,
-			description = description.text,
-			lastBuildDate = updated_time,
-			pubDate = updated_time,
-			generator = generator_name,
-			items = chapters).rss(),
-		content_type='application/rss+xml; charset=utf-8')
+	return rss_response(rfeed.Feed(
+		title=f'{title.text} by {author.text}',
+		link=story_url,
+		description=description.text,
+		lastBuildDate=updated_time,
+		pubDate=updated_time,
+		generator=generator_name,
+		items=chapters))
 
-@app.route('/feed/mangarock/manga/<oid:string>')
-async def mangarock_manga_feed(request, oid):
+@app.route('/feed/mangarock/manga/<string:oid>')
+async def mangarock_manga_feed(oid):
 	base_url = 'https://api.mangarockhd.com/query/web401/info'
 	async with aiohttp.request('GET', base_url, params={'oid': oid}) as resp:
 		if resp.status != 200:
-			raise NotFound(f'No manga with ID {id} could be found')
+			return text_response(f'No manga with ID {id} could be found'), 404
 		data = await resp.json()
 	
 	if data.get('code') != 0:
-		raise NotFound(f'No manga with ID {id} could be found')
+		return text_response(f'No manga with ID {id} could be found'), 404
 	else:
 		data = data.get('data', {})
 	
@@ -88,19 +91,17 @@ async def mangarock_manga_feed(request, oid):
 	
 	updated_time = datetime.fromtimestamp(data['last_update'])
 	
-	return text_response(
-		rfeed.Feed(
-			title = data.get('name'),
-			link = f'https://mangarock.com/manga/{oid}',
-			description = data.get('description'),
-			lastBuildDate = updated_time,
-			pubDate = updated_time,
-			generator = generator_name,
-			items = chapters).rss(),
-		content_type='application/rss+xml; charset=utf-8')
+	return rss_response(rfeed.Feed(
+		title=data.get('name'),
+		link=f'https://mangarock.com/manga/{oid}',
+		description=data.get('description'),
+		lastBuildDate=updated_time,
+		pubDate=updated_time,
+		generator=generator_name,
+		items=chapters))
 
-@app.route('/feed/custom/<name>')
-async def custom_feed(request, name):
+@app.route('/feed/custom/<string:name>')
+async def custom_feed(name):
 	parser = custom_yaml_parsers.get(name)
 	if not parser:
 		# Check for a Python parser
@@ -108,11 +109,10 @@ async def custom_feed(request, name):
 			parser = import_module(
 				f'parrotfish.custom.{name.replace("-", "_")}')
 		except ModuleNotFoundError:
-			raise NotFound(f'No custom parser with ID `{name}` could be found')
+			return text_response(f'No custom parser with ID `{name}` could be found'), 404
 	
 	feed = await parser.make_feed()
-	return text_response(feed.rss(),
-		content_type='application/rss+xml; charset=utf-8')
+	return rss_response(feed)
 
 def run_server(port=20550): # ASCII for 'PF'
 	print()
