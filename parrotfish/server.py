@@ -13,7 +13,7 @@ import os
 
 app = Sanic()
 
-custom_parsers = {}
+custom_yaml_parsers = {}
 
 @app.route('/feed/fanfic/<id:int>')
 async def fanfic_feed(request, id):
@@ -101,18 +101,16 @@ async def mangarock_manga_feed(request, oid):
 
 @app.route('/feed/custom/<name>')
 async def custom_feed(request, name):
-	parser = custom_parsers.get(name)
-	if parser:
-		feed = await parser.request_and_parse()
-	else:
+	parser = custom_yaml_parsers.get(name)
+	if not parser:
+		# Check for a Python parser
 		try:
 			parser = import_module(
-				f'custom.{name.replace("-", "_")}')
+				f'parrotfish.custom.{name.replace("-", "_")}')
 		except ModuleNotFoundError:
 			raise NotFound(f'No custom parser with ID `{name}` could be found')
-		
-		feed = await parser.make_feed(request)
 	
+	feed = await parser.make_feed()
 	return text_response(feed.rss(),
 		content_type='application/rss+xml; charset=utf-8')
 
@@ -145,9 +143,9 @@ def run_server(port=20550): # ASCII for 'PF'
 					print(e)
 					continue
 			
-			custom_parsers[name] = parser
+			custom_yaml_parsers[name] = parser
 	
-	print('Done. Loaded', len(custom_parsers), 'custom parser(s).')
+	print('Done. Loaded', len(custom_yaml_parsers), 'custom parser(s).')
 	print()
 
 	app.run(port=port)
