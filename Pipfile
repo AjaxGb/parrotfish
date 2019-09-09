@@ -1,0 +1,13 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+quart = "*"
+aiohttp = "*"
+beautifulsoup4 = "*"
+rfeed = "*"
+pyyaml = "*"
+
+[dev-packages]
