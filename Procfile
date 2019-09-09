@@ -1,1 +1,1 @@
-web: hypercorn parrotfish:run_server
+web: hypercorn app:run_server
