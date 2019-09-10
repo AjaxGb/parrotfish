@@ -1,1 +1,1 @@
-from parrotfish import make_app
+from parrotfish import app

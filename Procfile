@@ -1,1 +1,1 @@
-web: hypercorn -b 0.0.0.0:${PORT} app:make_app()
+web: hypercorn -b 0.0.0.0:${PORT} app:app
