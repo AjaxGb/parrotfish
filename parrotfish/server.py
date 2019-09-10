@@ -20,6 +20,7 @@ def rss_response(feed):
 
 @app.route('/feed/fanfic/<int:id>')
 async def fanfic_feed(id):
+	print('Working on it!', id)
 	story_url = f'https://www.fanfiction.net/s/{id}'
 	async with aiohttp.request('GET', story_url) as resp:
 		if resp.status != 200:
