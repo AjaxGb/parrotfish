@@ -1,3 +1,3 @@
-from parrotfish import run_server
+from parrotfish import run_app
 
-run_server()
+run_app()

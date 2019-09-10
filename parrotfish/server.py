@@ -114,7 +114,7 @@ async def custom_feed(name):
 	feed = await parser.make_feed()
 	return rss_response(feed)
 
-def run_server(port=20550): # ASCII for 'PF'
+def make_app():
 	print()
 	print(f'Welcome to {generator_name}!')
 	print()
@@ -148,4 +148,7 @@ def run_server(port=20550): # ASCII for 'PF'
 	print('Done. Loaded', len(custom_yaml_parsers), 'custom parser(s).')
 	print()
 
-	app.run(port=port)
+	return app
+
+def run_app(port=20550): # ASCII for 'PF'
+	make_app().run(port=port)

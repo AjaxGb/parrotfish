@@ -1,1 +1,1 @@
-from parrotfish import run_server
+from parrotfish import make_app
