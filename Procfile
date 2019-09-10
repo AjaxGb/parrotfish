@@ -1,1 +1,1 @@
-web: hypercorn app:make_app
+web: hypercorn app:app
