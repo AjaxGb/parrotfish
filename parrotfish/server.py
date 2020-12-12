@@ -6,6 +6,7 @@ from datetime import datetime
 from parrotfish import generator_name
 from parrotfish.custom import load_yaml_parser
 from importlib import import_module
+from itertools import islice
 import os
 
 app = Quart(__name__)
@@ -44,16 +45,16 @@ async def fanfic_feed(id):
 	if not chapter_select:
 		return text_response(f'No story with ID {id} could be found'), 404
 	
+	max_items = request.args.get('max', 20)
+	
 	chapters = []
-	for option in chapter_select.find_all('option'):
+	for option in islice(reversed(chapter_select.find_all('option')), max_items):
 		chap_title = option.find(
 			text=True, recursive=False).split('.', 1)[1].strip()
 		i = option['value']
 		chapters.append(rfeed.Item(
 			title = chap_title,
 			link = f'{story_url}/{i}',))
-	
-	chapters.reverse()
 	
 	return rss_response(rfeed.Feed(
 		title=f'{title.text} by {author.text}',
@@ -77,6 +78,8 @@ async def mangarock_manga_feed(oid):
 	else:
 		data = data.get('data', {})
 	
+	max_items = request.args.get('max', 20)
+	
 	chapters = [
 		rfeed.Item(
 			title = c.get('name'),
@@ -85,9 +88,7 @@ async def mangarock_manga_feed(oid):
 			# Ignore pubDate so that chapters will be displayed
 			# in the right order.
 			)
-		for c in data.get('chapters', ())]
-	
-	chapters.reverse()
+		for c in islice(reversed(data.get('chapters', ())), max_items)]
 	
 	updated_time = datetime.fromtimestamp(data['last_update'])
 	
