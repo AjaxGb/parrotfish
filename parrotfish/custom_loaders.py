@@ -28,6 +28,9 @@ class Extraction:
 	def __init__(self, settings):
 		pass # TODO: Regex extraction, etc.
 	
+	def get_base_text(self, node):
+		raise NotImplementedError
+	
 	def extract(self, node):
 		return self.get_base_text(node)
 
@@ -125,7 +128,7 @@ class SiteParser:
 	async def make_feed(self):
 		async with aiohttp.request(self.http_method, self.url) as resp:
 			if resp.status // 100 != 2:
-				raise NotFound(f'The site at {self.url} failed to load')
+				return None
 			html = await resp.content.read()
 		
 		return self.parse(BeautifulSoup(html, 'html.parser'))
@@ -140,9 +143,9 @@ if __name__ == '__main__':
 	import asyncio
 	
 	with open('custom/blastwave.yaml') as file:
-		parser = load_parser(file, generator="A")
+		parser = load_yaml_parser('blastwave', file, generator="A")
 	
 	loop = asyncio.get_event_loop()
-	feed = loop.run_until_complete(parser.request_and_parse())
+	feed = loop.run_until_complete(parser.make_feed())
 	
 	print(feed.rss())

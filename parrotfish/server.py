@@ -1,4 +1,4 @@
-from quart import Quart, Response, jsonify
+from quart import Quart, Response, jsonify, request
 from bs4 import BeautifulSoup
 import aiohttp
 import rfeed
@@ -112,7 +112,10 @@ async def custom_feed(name):
 			return text_response(f'No custom parser with ID `{name}` could be found'), 404
 	
 	feed = await parser.make_feed()
-	return rss_response(feed)
+	if feed:
+		return rss_response(feed)
+	else:
+		return text_response(f'The site referenced by {name} failed to load'), 404
 
 @app.before_serving
 async def load_custom_parsers():
